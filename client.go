@@ -133,6 +133,7 @@ func (c *Client) LatestAllPointMeasurement(ctx context.Context) (map[string]Meas
 	return c.AllPointMeasurement(ctx, *latestTime)
 }
 
+// SinglePointMeasurements は指定した観測地点の3時間刻みの時間枠内の10分ごとの観測データを取得します。
 func (c *Client) SinglePointMeasurements(ctx context.Context, point string, target time.Time) (map[string]Measurement, error) {
 	targetHour := int(target.Hour()/3) * 3 // 1時間刻みを3時間刻みに変更
 	body, err := c.get(ctx, fmt.Sprintf("%s/data/point/%s/%d%02d%02d_%02d.json",
@@ -147,6 +148,7 @@ func (c *Client) SinglePointMeasurements(ctx context.Context, point string, targ
 	return m, nil
 }
 
+// LatestSinglePointMeasurement　は指定した観測地点の最新の観測データを取得します。
 func (c *Client) LatestSinglePointMeasurement(ctx context.Context, point string) (*Measurement, error) {
 	latestTime, err := c.LatestTime(ctx)
 	if err != nil {
