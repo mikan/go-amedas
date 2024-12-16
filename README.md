@@ -1,6 +1,8 @@
 go-amedas
 ---------
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mikan/go-amedas)](https://pkg.go.dev/github.com/mikan/go-amedas)
+
 Go 言語 (golang) で気象庁のアメダスの JSON データを利用するためのデータ定義とクライアントライブラリです。
 
 ## 機能
