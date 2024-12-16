@@ -2,7 +2,11 @@ package amedas
 
 import (
 	"fmt"
+	"time"
 )
+
+// TimeKeyLayout は観測データの時刻を示す文字列のレイアウトを定義します。
+const TimeKeyLayout = "20060102150405"
 
 var windDirectionLabels = []string{
 	"北北東", "北東", "東北東", "東", "東南東", "南東", "南南東", "南", // [0]=1 [7]=8
@@ -165,4 +169,33 @@ func (m Measurement) GustDirectionLabel() string {
 		return ""
 	}
 	return windDirectionLabels[(*m.GustDirection)[0]-1]
+}
+
+// MeasurementWithTime は観測データに時刻情報を付与した本ライブラリ独自のデータ構造を示します。
+type MeasurementWithTime struct {
+	Measurement
+	Key  string
+	Time time.Time
+}
+
+// WithTime は観測データに時刻情報を付与した独自のデータ構造に変換します。
+func (m Measurement) WithTime(key string) (*MeasurementWithTime, error) {
+	t, err := time.Parse(TimeKeyLayout, key)
+	if err != nil {
+		return nil, err
+	}
+	return &MeasurementWithTime{Measurement: m, Key: key, Time: t}, nil
+}
+
+// StringMapToTimeMap はキーが文字列の計測データの map をキーが時刻の計測データの map に変換します。
+func StringMapToTimeMap(m map[string]Measurement) (map[time.Time]Measurement, error) {
+	mt := map[time.Time]Measurement{}
+	for k := range m {
+		t, err := time.Parse(TimeKeyLayout, k)
+		if err != nil {
+			return nil, err
+		}
+		mt[t] = m[k]
+	}
+	return mt, nil
 }

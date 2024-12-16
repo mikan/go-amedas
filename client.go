@@ -133,7 +133,7 @@ func (c *Client) LatestAllPointMeasurement(ctx context.Context) (map[string]Meas
 	return c.AllPointMeasurement(ctx, *latestTime)
 }
 
-// SinglePointMeasurements は指定した観測地点の3時間刻みの時間枠内の10分ごとの観測データを取得します。
+// SinglePointMeasurements は指定した観測地点の3時間刻みの時間枠内の10分ごとの観測データを時刻を示す文字列をキーとした map で取得します。
 func (c *Client) SinglePointMeasurements(ctx context.Context, point string, target time.Time) (map[string]Measurement, error) {
 	targetHour := int(target.Hour()/3) * 3 // 1時間刻みを3時間刻みに変更
 	body, err := c.get(ctx, fmt.Sprintf("%s/data/point/%s/%d%02d%02d_%02d.json",
@@ -148,21 +148,52 @@ func (c *Client) SinglePointMeasurements(ctx context.Context, point string, targ
 	return m, nil
 }
 
-// LatestSinglePointMeasurement　は指定した観測地点の最新の観測データを取得します。
+// SinglePointMeasurementsTimeMap は指定した観測地点の3時間刻みの時間枠内の10分ごとの観測データを時刻をキーとした map で取得します。
+func (c *Client) SinglePointMeasurementsTimeMap(ctx context.Context, point string, target time.Time) (map[time.Time]Measurement, error) {
+	m, err := c.SinglePointMeasurements(ctx, point, target)
+	if err != nil {
+		return nil, err
+	}
+	return StringMapToTimeMap(m)
+}
+
+// SinglePointMeasurementsTimeSlice は指定した観測地点の3時間刻みの時間枠内の10分ごとの観測データを時刻順にソートした slice で取得します。
+func (c *Client) SinglePointMeasurementsTimeSlice(ctx context.Context, point string, target time.Time) ([]MeasurementWithTime, error) {
+	m, err := c.SinglePointMeasurements(ctx, point, target)
+	if err != nil {
+		return nil, err
+	}
+	s := make([]MeasurementWithTime, 0, len(m))
+	for k, v := range m {
+		wt, err := v.WithTime(k)
+		if err != nil {
+			return nil, err
+		}
+		s = append(s, *wt)
+	}
+	sort.Slice(s, func(i, j int) bool { return s[i].Time.After(s[j].Time) })
+	return s, nil
+}
+
+// LatestSinglePointMeasurement は指定した観測地点の最新の観測データを取得します。
 func (c *Client) LatestSinglePointMeasurement(ctx context.Context, point string) (*Measurement, error) {
+	latest, err := c.LatestSinglePointMeasurementWithTime(ctx, point)
+	if err != nil {
+		return nil, err
+	}
+	return &latest.Measurement, nil
+}
+
+// LatestSinglePointMeasurementWithTime は指定した観測地点の最新の観測データに観測時刻を付与した独自のデータ型で取得します。
+func (c *Client) LatestSinglePointMeasurementWithTime(ctx context.Context, point string) (*MeasurementWithTime, error) {
 	latestTime, err := c.LatestTime(ctx)
 	if err != nil {
 		return nil, err
 	}
-	m, err := c.SinglePointMeasurements(ctx, point, *latestTime)
+	s, err := c.SinglePointMeasurementsTimeSlice(ctx, point, *latestTime)
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	latest := m[keys[len(keys)-1]]
+	latest := s[len(s)-1]
 	return &latest, nil
 }
