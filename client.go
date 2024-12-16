@@ -171,7 +171,7 @@ func (c *Client) SinglePointMeasurementsTimeSlice(ctx context.Context, point str
 		}
 		s = append(s, *wt)
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].Time.After(s[j].Time) })
+	sort.Slice(s, func(i, j int) bool { return s[i].Time.Before(s[j].Time) })
 	return s, nil
 }
 
